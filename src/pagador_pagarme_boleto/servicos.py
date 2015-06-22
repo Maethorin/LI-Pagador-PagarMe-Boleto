@@ -115,7 +115,7 @@ class EntregaPagamento(servicos.EntregaPagamento):
             }
             self.identificacao_pagamento = self.resposta.conteudo['id']
             self.situacao_pedido = SituacoesDePagamento.do_tipo(self.resposta.conteudo['status'])
-            self.resultado = {'sucesso': self.resposta.conteudo['status'] == 'waiting_payment', 'situacao_pedido': self.situacao_pedido, 'alterado_por_notificacao': False}
+            self.resultado = {'boleto_url': self.resposta.conteudo['boleto_url'], 'sucesso': self.resposta.conteudo['status'] == 'waiting_payment', 'situacao_pedido': self.situacao_pedido, 'alterado_por_notificacao': False}
         elif self.resposta.requisicao_invalida or self.resposta.nao_autorizado:
             self.situacao_pedido = SituacoesDePagamento.do_tipo('refused')
             titulo = u'A autenticação da loja com o PAGAR.ME falhou. Por favor, entre em contato com nosso SAC.' if self.resposta.nao_autorizado else u'Ocorreu um erro nos dados enviados ao PAGAR.ME. Por favor, entre em contato com nosso SAC.'

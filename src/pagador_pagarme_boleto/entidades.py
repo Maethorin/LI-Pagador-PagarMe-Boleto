@@ -30,7 +30,8 @@ class Malote(entidades.Malote):
         self.metadata = None
 
     def monta_conteudo(self, pedido, parametros_contrato=None, dados=None):
-        self.boleto_expiration_date = (datetime.now() + timedelta(days=self.configuracao.json['dias_vencimento'])).isoformat()
+        dias_vencimento = int(self.configuracao.json.get('dias_vencimento', 2))
+        self.boleto_expiration_date = (datetime.now() + timedelta(days=dias_vencimento)).isoformat()
         self.amount = self.formatador.formata_decimal(pedido.valor_total, em_centavos=True)
         url_notificacao = settings.NOTIFICACAO_URL.format(GATEWAY, self.configuracao.loja_id)
         self.postback_url = '{}/notificacao?referencia={}'.format(url_notificacao, pedido.numero)
