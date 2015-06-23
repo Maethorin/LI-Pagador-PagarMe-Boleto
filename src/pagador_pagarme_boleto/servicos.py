@@ -5,7 +5,11 @@ from time import sleep
 from pagador import servicos
 
 
+# import logging
+# logger = logging.getLogger('PAGARME-BOLETO')
+
 TEMPO_MAXIMO_ESPERA_NOTIFICACAO = 30
+
 
 
 class Ambiente(object):
@@ -110,9 +114,13 @@ class EntregaPagamento(servicos.EntregaPagamento):
                 'valor_pago': self.formatador.formata_decimal(self.pedido.valor_total),
                 'conteudo_json': {
                     'aplicacao': self.configuracao.aplicacao,
-                    'boleto_url': self.resposta.conteudo['boleto_url']
+                    'boleto_url': self.resposta.conteudo['boleto_url'],
+                    'codigo_barras': self.resposta.conteudo['boleto_barcode'],
+                    'vencimento': self.resposta.conteudo['boleto_expiration_date'],
                 }
             }
+            # logger.debug('\n\n\nRECEBIDO:\n{}\n\n\n'.format(self.resposta.conteudo))
+            # logger.debug('\n\n\nENVIADO:\n{}\n\n\n'.format(self.dados_enviados))
             self.identificacao_pagamento = self.resposta.conteudo['id']
             self.situacao_pedido = SituacoesDePagamento.do_tipo(self.resposta.conteudo['status'])
             self.resultado = {'boleto_url': self.resposta.conteudo['boleto_url'], 'sucesso': self.resposta.conteudo['status'] == 'waiting_payment', 'situacao_pedido': self.situacao_pedido, 'alterado_por_notificacao': False}
