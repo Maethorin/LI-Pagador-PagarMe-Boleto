@@ -35,6 +35,7 @@ class Malote(entidades.Malote):
         self.amount = self.formatador.formata_decimal(pedido.valor_total, em_centavos=True)
         url_notificacao = settings.NOTIFICACAO_URL.format(GATEWAY, self.configuracao.loja_id)
         self.postback_url = '{}/notificacao?referencia={}'.format(url_notificacao, pedido.numero)
+        cliente_cep = pedido.endereco_cliente.get('cep', '').replace('-', '')
         self.customer = Cliente(
             name=pedido.cliente['nome'],
             document_number=pedido.cliente_documento,
@@ -44,7 +45,7 @@ class Malote(entidades.Malote):
                 street_number=pedido.endereco_cliente['numero'],
                 complementary=pedido.endereco_cliente['complemento'],
                 neighborhood=pedido.endereco_cliente['bairro'],
-                zipcode=pedido.endereco_cliente['cep'],
+                zipcode=cliente_cep,
             ),
             phone=Telefone(ddd=pedido.cliente_telefone[0], number=pedido.cliente_telefone[1])
         )
