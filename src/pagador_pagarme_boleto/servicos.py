@@ -194,7 +194,7 @@ class RegistraNotificacao(servicos.RegistraResultado):
     def monta_dados_pagamento(self):
         self.pedido_numero = self.pedido_id
         self.situacao_pedido = SituacoesDePagamento.do_tipo(self.status)
-        if self.resposta and self.resposta.sucesso:
+        if self.status:
             self.resultado = {'resultado': 'OK'}
         else:
             self.resultado = {'resultado': 'FALHA', 'status_code': 500}

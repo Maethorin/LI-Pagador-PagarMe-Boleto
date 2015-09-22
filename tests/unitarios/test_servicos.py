@@ -84,11 +84,27 @@ class PagarMeBoletoEntregaPagamento(unittest.TestCase):
         self.entregador.envia_pagamento()
         self.entregador.conexao.post.assert_called_with(self.entregador.url, 'malote-como-dicionario')
 
+
+    # def test_processa_pagamento_boleto(self):
+    #     self.entregador.configuracao = mock.MagicMock(aplicacao='test')
+    #     self.entregador.pedido.conteudo_json['pagarme']['metodo'] = 'boleto'
+    #     self.entregador.resposta = mock.MagicMock(sucesso=True, requisicao_invalida=False, conteudo={'status': 'waiting_payment', 'id': 'identificacao-id', 'boleto_url': 'url-boleto', 'boleto_barcode': 'codigo-barras-boleto', 'boleto_expiration_date': 'data-expiracao-boleto'})
+    #     self.entregador.processa_dados_pagamento()
+    #     self.entregador.dados_pagamento.should.be.equal({'conteudo_json': {'metodo': 'boleto', 'aplicacao': 'test', 'boleto_url': 'url-boleto', 'codigo_barras': 'codigo-barras-boleto', 'vencimento': 'data-expiracao-boleto'}, 'transacao_id': 'identificacao-id', 'valor_pago': '123.56'})
+    #
+    # def test_processa_pagamento_boleto_sem_sucesso(self):
+    #     self.entregador.configuracao = mock.MagicMock(aplicacao='test')
+    #     self.entregador.pedido.conteudo_json['pagarme']['metodo'] = 'boleto'
+    #     self.entregador.resposta = mock.MagicMock(sucesso=True, requisicao_invalida=False, conteudo={'status': 'refused'})
+    #     self.entregador.processa_dados_pagamento()
+    #     self.entregador.dados_pagamento.should.be.empty
+
     @mock.patch('pagador_pagarme_boleto.servicos.EntregaPagamento.obter_conexao', mock.MagicMock())
     def test_processar_dados_de_pagamento_define_dados_pagamento(self):
-        self.entregador.resposta = mock.MagicMock(sucesso=True, requisicao_invalida=False, conteudo={'status': 'waiting_payment', 'id': 'identificacao-id', 'boleto_url': 'url-do-boleto'})
+        self.entregador.configuracao = mock.MagicMock(aplicacao='test')
+        self.entregador.resposta = mock.MagicMock(sucesso=True, requisicao_invalida=False, conteudo={'status': 'waiting_payment', 'id': 'identificacao-id', 'boleto_url': 'url-boleto', 'boleto_barcode': 'codigo-barras-boleto', 'boleto_expiration_date': 'data-expiracao-boleto'})
         self.entregador.processa_dados_pagamento()
-        self.entregador.dados_pagamento.should.be.equal({'conteudo_json': {'aplicacao': 'test', 'boleto_url': 'url-do-boleto'}, 'transacao_id': 'identificacao-id', 'valor_pago': '123.56'})
+        self.entregador.dados_pagamento.should.be.equal({'conteudo_json': {'aplicacao': 'test', 'boleto_url': 'url-boleto', 'codigo_barras': 'codigo-barras-boleto', 'metodo': 'boleto', 'vencimento': 'data-expiracao-boleto'}, 'transacao_id': 'identificacao-id', 'valor_pago': '123.56'})
 
     @mock.patch('pagador_pagarme_boleto.servicos.EntregaPagamento.obter_conexao', mock.MagicMock())
     def test_processar_dados_de_pagamento_dispara_erro_se_invalido(self):
@@ -106,7 +122,7 @@ class PagarMeBoletoEntregaPagamento(unittest.TestCase):
         self.entregador.resposta = mock.MagicMock(status_code=400, sucesso=False, requisicao_invalida=True, nao_autorizado=False, conteudo={u'url': u'/transactions', u'errors': [{u'message': u'Nome do portador do cartão está faltando', u'type': u'whatever'}, {u'message': u'Data de expiração do cartão está faltando', u'type': u'whatever'}], u'method': u'post'})
         self.entregador.processa_dados_pagamento.when.called_with().should.throw(
             self.entregador.EnvioNaoRealizado,
-            u'Ocorreu um erro nos dados enviados ao PAGAR.ME. Por favor, entre em contato com nosso SAC.'
+            u'Houve um erro de comunicação e sua compra não foi concluída. Por favor refaça o pedido.'
         )
 
     @mock.patch('pagador_pagarme_boleto.servicos.EntregaPagamento.obter_conexao', mock.MagicMock())
@@ -115,14 +131,14 @@ class PagarMeBoletoEntregaPagamento(unittest.TestCase):
         self.entregador.resposta = mock.MagicMock(status_code=403, sucesso=False, requisicao_invalida=False, nao_autorizado=True, conteudo={u'url': u'/transactions', u'errors': [{u'message': u'api_key inválida', u'type': u'whatever'}], u'method': u'post'})
         self.entregador.processa_dados_pagamento.when.called_with().should.throw(
             self.entregador.EnvioNaoRealizado,
-            u'A autenticação da loja com o PAGAR.ME falhou. Por favor, entre em contato com nosso SAC.'
+            u'Houve um erro de comunicação e sua compra não foi concluída. Por favor refaça o pedido.'
         )
 
     @mock.patch('pagador_pagarme_boleto.servicos.EntregaPagamento.obter_conexao', mock.MagicMock())
     def test_processar_dados_de_pagamento_define_identificador_id(self):
         self.entregador.configuracao = mock.MagicMock(aplicacao='test')
         self.entregador.pedido = mock.MagicMock(valor_total=15.70)
-        self.entregador.resposta = mock.MagicMock(sucesso=True, requisicao_invalida=False, conteudo={'status': 'waiting_payment', 'id': 'identificacao-id', 'boleto_url': 'url-do-boleto'})
+        self.entregador.resposta = mock.MagicMock(sucesso=True, requisicao_invalida=False, conteudo={'status': 'waiting_payment', 'id': 'identificacao-id', 'boleto_url': 'url-boleto', 'boleto_barcode': 'codigo-barras-boleto', 'boleto_expiration_date': 'data-expiracao-boleto'})
         self.entregador.processa_dados_pagamento()
         self.entregador.identificacao_pagamento.should.be.equal('identificacao-id')
 
@@ -184,3 +200,8 @@ class PagarMeBoletoRegistrandoNotificacao(unittest.TestCase):
         registrador = servicos.RegistraNotificacao(1234, {'id': 1234, 'current_status': 'paid'})
         registrador.monta_dados_pagamento()
         registrador.resultado.should.be.equal({'resultado': 'OK'})
+
+    def test_deve_retornar_falha_se_nao_vier_status(self):
+        registrador = servicos.RegistraNotificacao(1234, {'id': 1234})
+        registrador.monta_dados_pagamento()
+        registrador.resultado.should.be.equal({'resultado': 'FALHA', 'status_code': 500})

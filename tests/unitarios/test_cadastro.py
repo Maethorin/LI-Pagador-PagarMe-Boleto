@@ -34,8 +34,8 @@ class FormularioPagarMeBoleto(unittest.TestCase):
         self.formulario.chave_api.tamanho_max.should.be.equal(128)
         self.formulario.chave_api.requerido.should.be.truthy
 
-    def test_deve_ter_valor_minimo_aceitado(self):
-        self.formulario.valor_minimo_aceitado.nome.should.be.equal('valor_minimo_aceitado')
-        self.formulario.valor_minimo_aceitado.ordem.should.be.equal(5)
-        self.formulario.valor_minimo_aceitado.label.should.be.equal(u'Valor mínimo')
-        self.formulario.valor_minimo_aceitado.tipo.should.be.equal(cadastro.cadastro.TipoDeCampo.decimal)
+    # def test_deve_ter_valor_minimo_aceitado(self):
+    #     self.formulario.valor_minimo_aceitado.nome.should.be.equal('valor_minimo_aceitado')
+    #     self.formulario.valor_minimo_aceitado.ordem.should.be.equal(5)
+    #     self.formulario.valor_minimo_aceitado.label.should.be.equal(u'Valor mínimo')
+    #     self.formulario.valor_minimo_aceitado.tipo.should.be.equal(cadastro.cadastro.TipoDeCampo.decimal)

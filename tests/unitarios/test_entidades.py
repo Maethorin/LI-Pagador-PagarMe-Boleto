@@ -11,7 +11,7 @@ from pagador_pagarme_boleto import entidades
 class PagarMeBoletoConfiguracaoMeioPagamento(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(PagarMeBoletoConfiguracaoMeioPagamento, self).__init__(*args, **kwargs)
-        self.campos = ['ativo', 'aplicacao', 'token', 'valor_minimo_aceitado', 'json']
+        self.campos = ['ativo', 'aplicacao', 'token', 'json']
         self.codigo_gateway = 15
 
     @mock.patch('pagador_pagarme_boleto.entidades.ConfiguracaoMeioPagamento.preencher_gateway', mock.MagicMock())
