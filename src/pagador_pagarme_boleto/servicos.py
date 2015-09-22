@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import json
-from time import sleep
+from li_common.conexoes import cache
+
 from pagador import servicos
-
-
-# import logging
-# logger = logging.getLogger('PAGARME-BOLETO')
-
-TEMPO_MAXIMO_ESPERA_NOTIFICACAO = 30
-
 
 
 class Ambiente(object):
@@ -54,23 +48,51 @@ class EntregaPagamento(servicos.EntregaPagamento):
         self.conexao = self.obter_conexao()
         self.url = 'https://api.pagar.me/1/transactions'
         self.dados_pagamento = {}
+        self.cacheador = None
 
     def define_credenciais(self):
         self.conexao.credenciador = Credenciador(configuracao=self.configuracao)
 
+    def cacheador_estah_no_ar(self):
+        try:
+            self.cacheador = cache.RedisConnect()
+            self.cacheador.set('PAGARME-PING', 1)
+            funcionando = self.cacheador.get('PAGARME-PING') == 1
+            self.cacheador.server.delete('PAGARME-PING')
+            return funcionando
+        except Exception:
+            return False
+
     def envia_pagamento(self, tentativa=1):
+        if self.cacheador_estah_no_ar():
+            chave = '{}-pagarme-{}'.format(self.loja_id, self.pedido.numero)
+            if self.cacheador.exists(chave):
+                self.dispara_pedido_jah_realizado(em_processamento=True)
+            self.cacheador.set(chave, 1)
         if self.pedido.situacao_id and self.pedido.situacao_id != servicos.SituacaoPedido.SITUACAO_PEDIDO_EFETUADO:
-            self.resultado = {
-                'sucesso': self.pedido.situacao_id == servicos.SituacaoPedido.SITUACAO_PEDIDO_PAGO,
-                'situacao_pedido': self.situacao_pedido,
-                'alterado_por_notificacao': False
-            }
-            next_url = self.dados.get('next_url', None)
-            if next_url:
-                self.resultado['next_url'] = next_url
-            raise self.PedidoJaRealizado(u'Esse pedido já foi realizado e está com status {}'.format(self.pedido.situacao_id))
+            self.dispara_pedido_jah_realizado()
         self.dados_enviados = self.malote.to_dict()
         self.resposta = self.conexao.post(self.url, self.dados_enviados)
+
+    def dispara_pedido_jah_realizado(self, em_processamento=False):
+        sucesso = em_processamento
+        mensagem = u'Esse pedido está em processamento, porém um erro fez com que o resultado não fosse recebido.\nPor favor, verifique na área do cliente em Meus pedidos a situação dessa compra.'
+        if not em_processamento:
+            sucesso = self.pedido.situacao_id == servicos.SituacaoPedido.SITUACAO_PEDIDO_PAGO
+            mensagem = u'Já foi realizado um pedido com o número {} e ele está como {}.\n{}'.format(
+                self.pedido.numero,
+                servicos.SituacaoPedido.NOMES_SITUACAO[self.pedido.situacao_id],
+                servicos.SituacaoPedido.mensagens_complementares(self.pedido.situacao_id)
+            )
+        self.resultado = {
+            'sucesso': sucesso,
+            'situacao_pedido': self.pedido.situacao_id,
+            'alterado_por_notificacao': False
+        }
+        next_url = self.dados.get('next_url', None)
+        if next_url:
+            self.resultado['next_url'] = next_url
+        raise self.PedidoJaRealizado(mensagem)
 
     def _verifica_erro_em_conteudo(self, titulo):
         mensagens = []
@@ -83,7 +105,7 @@ class EntregaPagamento(servicos.EntregaPagamento):
             if erros:
                 for erro in erros:
                     if erro['type'] == 'invalid_parameter':
-                        invalid_parameter = True
+                        invalid_parameter = erro['parameter_name'] != 'card_hash'
                         mensagens.append(u'{}: {}'.format(erro['parameter_name'], erro['message']))
                         titulo_substituto.append(MENSAGEM_DADOS_INVALIDOS.get(erro['parameter_name'], erro['message']))
                     elif erro['type'] == 'action_forbidden' and 'refused' in erro['message']:
@@ -107,31 +129,38 @@ class EntregaPagamento(servicos.EntregaPagamento):
             status=(400 if invalid_parameter else 500)
         )
 
-    def processa_dados_pagamento(self):
+    def processa_dados_pagamento_boleto(self):
         if self.resposta.sucesso:
-            self.dados_pagamento = {
-                'transacao_id': self.resposta.conteudo['id'],
-                'valor_pago': self.formatador.formata_decimal(self.pedido.valor_total),
-                'conteudo_json': {
-                    'aplicacao': self.configuracao.aplicacao,
-                    'boleto_url': self.resposta.conteudo['boleto_url'],
-                    'codigo_barras': self.resposta.conteudo['boleto_barcode'],
-                    'vencimento': self.resposta.conteudo['boleto_expiration_date'],
+            sucesso = self.resposta.conteudo['status'] == 'waiting_payment'
+            if sucesso:
+                self.dados_pagamento = {
+                    'transacao_id': self.resposta.conteudo['id'],
+                    'valor_pago': self.formatador.formata_decimal(self.pedido.valor_total),
+                    'conteudo_json': {
+                        'metodo': 'boleto',
+                        'aplicacao': self.configuracao.aplicacao,
+                        'boleto_url': self.resposta.conteudo['boleto_url'],
+                        'codigo_barras': self.resposta.conteudo['boleto_barcode'],
+                        'vencimento': self.resposta.conteudo['boleto_expiration_date'],
+                    }
                 }
-            }
-            # logger.debug('\n\n\nRECEBIDO:\n{}\n\n\n'.format(self.resposta.conteudo))
-            # logger.debug('\n\n\nENVIADO:\n{}\n\n\n'.format(self.dados_enviados))
-            self.identificacao_pagamento = self.resposta.conteudo['id']
+                self.identificacao_pagamento = self.resposta.conteudo['id']
             self.situacao_pedido = SituacoesDePagamento.do_tipo(self.resposta.conteudo['status'])
-            self.resultado = {'boleto_url': self.resposta.conteudo['boleto_url'], 'sucesso': self.resposta.conteudo['status'] == 'waiting_payment', 'situacao_pedido': self.situacao_pedido, 'alterado_por_notificacao': False}
-        elif self.resposta.requisicao_invalida or self.resposta.nao_autorizado:
-            self.situacao_pedido = SituacoesDePagamento.do_tipo('refused')
-            titulo = u'A autenticação da loja com o PAGAR.ME falhou. Por favor, entre em contato com nosso SAC.' if self.resposta.nao_autorizado else u'Ocorreu um erro nos dados enviados ao PAGAR.ME. Por favor, entre em contato com nosso SAC.'
+            self.resultado = {'sucesso': sucesso, 'situacao_pedido': self.situacao_pedido, 'alterado_por_notificacao': False}
+            return True
+        return False
+
+    def processa_dados_pagamento(self):
+        processado = self.processa_dados_pagamento_boleto()
+        if processado:
+            return
+        titulo = u'Houve um erro de comunicação e sua compra não foi concluída. Por favor refaça o pedido.'
+        self.situacao_pedido = SituacoesDePagamento.do_tipo('refused')
+        if self.resposta.requisicao_invalida or self.resposta.nao_autorizado:
             if not self._verifica_erro_em_conteudo(titulo):
                 self.resultado = {'sucesso': False, 'mensagem': u'nao_aprovado', 'situacao_pedido': self.situacao_pedido, 'fatal': True}
         else:
-            self.situacao_pedido = SituacoesDePagamento.do_tipo('refused')
-            self._verifica_erro_em_conteudo(u'Não foi obtida uma resposta válida do PAGAR.ME. Nosso equipe técnica está avaliando o problema.')
+            self._verifica_erro_em_conteudo(titulo)
 
 
 class SituacoesDePagamento(servicos.SituacoesDePagamento):
@@ -165,4 +194,7 @@ class RegistraNotificacao(servicos.RegistraResultado):
     def monta_dados_pagamento(self):
         self.pedido_numero = self.pedido_id
         self.situacao_pedido = SituacoesDePagamento.do_tipo(self.status)
-        self.resultado = {'resultado': 'OK'}
+        if self.resposta and self.resposta.sucesso:
+            self.resultado = {'resultado': 'OK'}
+        else:
+            self.resultado = {'resultado': 'FALHA', 'status_code': 500}

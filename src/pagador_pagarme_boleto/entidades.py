@@ -5,6 +5,10 @@ from pagador_pagarme_boleto import cadastro
 
 CODIGO_GATEWAY = 15
 GATEWAY = 'pmboleto'
+JSON_PADRAO = {
+    'boleto_ativo': False,
+    'dias_vencimento': 2
+}
 
 
 class Cliente(entidades.BaseParaPropriedade):
@@ -57,9 +61,11 @@ class Malote(entidades.Malote):
 
 class ConfiguracaoMeioPagamento(entidades.ConfiguracaoMeioPagamento):
     def __init__(self, loja_id, codigo_pagamento=None, eh_listagem=False):
-        self.campos = ['ativo', 'aplicacao', 'token', 'valor_minimo_aceitado', 'json']
+        self.campos = ['ativo', 'aplicacao', 'token', 'valor_minimo_aceitado', 'desconto', 'desconto_valor', 'aplicar_no_total', 'json']
         self.codigo_gateway = CODIGO_GATEWAY
         self.eh_gateway = True
         super(ConfiguracaoMeioPagamento, self).__init__(loja_id, codigo_pagamento, eh_listagem=eh_listagem)
         if not self.eh_listagem:
+            if not self.json:
+                self.json = JSON_PADRAO
             self.formulario = cadastro.FormularioPagarMeBoleto()
