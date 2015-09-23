@@ -52,8 +52,8 @@ class FormularioPagarMeBoleto(unittest.TestCase):
         self.formulario.aplicar_no_total.label.should.be.equal(u'Aplicar no total?')
         self.formulario.aplicar_no_total.tipo.should.be.equal(cadastro.cadastro.TipoDeCampo.boleano)
 
-    # def test_deve_ter_valor_minimo_aceitado(self):
-    #     self.formulario.valor_minimo_aceitado.nome.should.be.equal('valor_minimo_aceitado')
-    #     self.formulario.valor_minimo_aceitado.ordem.should.be.equal(5)
-    #     self.formulario.valor_minimo_aceitado.label.should.be.equal(u'Valor mínimo')
-    #     self.formulario.valor_minimo_aceitado.tipo.should.be.equal(cadastro.cadastro.TipoDeCampo.decimal)
+    def test_deve_ter_valor_minimo_aceitado(self):
+        self.formulario.valor_minimo_aceitado.nome.should.be.equal('valor_minimo_aceitado')
+        self.formulario.valor_minimo_aceitado.ordem.should.be.equal(7)
+        self.formulario.valor_minimo_aceitado.label.should.be.equal(u'Valor mínimo')
+        self.formulario.valor_minimo_aceitado.tipo.should.be.equal(cadastro.cadastro.TipoDeCampo.decimal)
