@@ -34,6 +34,24 @@ class FormularioPagarMeBoleto(unittest.TestCase):
         self.formulario.chave_api.tamanho_max.should.be.equal(128)
         self.formulario.chave_api.requerido.should.be.truthy
 
+    def test_deve_ter_tem_desconto(self):
+        self.formulario.tem_desconto.nome.should.be.equal('desconto')
+        self.formulario.tem_desconto.ordem.should.be.equal(4)
+        self.formulario.tem_desconto.label.should.be.equal(u'Usar desconto?')
+        self.formulario.tem_desconto.tipo.should.be.equal(cadastro.cadastro.TipoDeCampo.boleano)
+
+    def test_deve_ter_desconto_valor(self):
+        self.formulario.desconto_valor.nome.should.be.equal('desconto_valor')
+        self.formulario.desconto_valor.ordem.should.be.equal(5)
+        self.formulario.desconto_valor.label.should.be.equal(u'Desconto aplicado')
+        self.formulario.desconto_valor.tipo.should.be.equal(cadastro.cadastro.TipoDeCampo.decimal)
+
+    def test_deve_ter_aplicar_no_total(self):
+        self.formulario.aplicar_no_total.nome.should.be.equal('aplicar_no_total')
+        self.formulario.aplicar_no_total.ordem.should.be.equal(6)
+        self.formulario.aplicar_no_total.label.should.be.equal(u'Aplicar no total?')
+        self.formulario.aplicar_no_total.tipo.should.be.equal(cadastro.cadastro.TipoDeCampo.boleano)
+
     # def test_deve_ter_valor_minimo_aceitado(self):
     #     self.formulario.valor_minimo_aceitado.nome.should.be.equal('valor_minimo_aceitado')
     #     self.formulario.valor_minimo_aceitado.ordem.should.be.equal(5)
