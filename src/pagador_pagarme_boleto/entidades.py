@@ -60,7 +60,7 @@ class Malote(entidades.Malote):
 
 
 class ConfiguracaoMeioPagamento(entidades.ConfiguracaoMeioPagamento):
-    MEIOS_PAGAMENTO = {
+    modos_pagamento_aceitos = {
         'outros': ['boleto']
     }
 
