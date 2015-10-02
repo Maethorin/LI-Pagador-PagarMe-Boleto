@@ -60,6 +60,10 @@ class Malote(entidades.Malote):
 
 
 class ConfiguracaoMeioPagamento(entidades.ConfiguracaoMeioPagamento):
+    MEIOS_PAGAMENTO = {
+        'outros': ['boleto']
+    }
+
     def __init__(self, loja_id, codigo_pagamento=None, eh_listagem=False):
         self.campos = ['ativo', 'aplicacao', 'token', 'desconto', 'desconto_valor', 'aplicar_no_total', 'valor_minimo_aceitado', 'json']
         self.codigo_gateway = CODIGO_GATEWAY
