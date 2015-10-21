@@ -87,7 +87,8 @@ class EntregaPagamento(servicos.EntregaPagamento):
         self.resultado = {
             'sucesso': sucesso,
             'situacao_pedido': self.pedido.situacao_id,
-            'alterado_por_notificacao': False
+            'alterado_por_notificacao': False,
+            'pago': sucesso
         }
         next_url = self.dados.get('next_url', None)
         if next_url:
@@ -146,7 +147,7 @@ class EntregaPagamento(servicos.EntregaPagamento):
                 }
                 self.identificacao_pagamento = self.resposta.conteudo['id']
             self.situacao_pedido = SituacoesDePagamento.do_tipo(self.resposta.conteudo['status'])
-            self.resultado = {'sucesso': sucesso, 'situacao_pedido': self.situacao_pedido, 'alterado_por_notificacao': False}
+            self.resultado = {'resultado': 'sucesso' if sucesso else 'cancelado', 'situacao_pedido': self.situacao_pedido, 'alterado_por_notificacao': False, 'pago': sucesso}
             return True
         return False
 
@@ -158,7 +159,7 @@ class EntregaPagamento(servicos.EntregaPagamento):
         self.situacao_pedido = SituacoesDePagamento.do_tipo('refused')
         if self.resposta.requisicao_invalida or self.resposta.nao_autorizado:
             if not self._verifica_erro_em_conteudo(titulo):
-                self.resultado = {'sucesso': False, 'mensagem': u'nao_aprovado', 'situacao_pedido': self.situacao_pedido, 'fatal': True}
+                self.resultado = {'sucesso': False, 'mensagem': u'nao_aprovado', 'situacao_pedido': self.situacao_pedido, 'fatal': True, 'pago': False}
         else:
             self._verifica_erro_em_conteudo(titulo)
 
